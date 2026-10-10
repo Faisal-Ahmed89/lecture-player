@@ -73,10 +73,18 @@
   #yt { flex: 1; width: 100%; }
   #right { flex: 1 1 50%; display: flex; flex-direction: column; min-width: 0;
            border-left: 1px solid var(--line); }
-  #pagebar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-             padding: 6px 10px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  /* one line over the book while reading: every pixel above it is book lost */
+  #pagebar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+             padding: 5px 8px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  #pagebar button, #pagebar input, #toolbar button { padding: 3px 8px; font-size: 13px; }
+  #pagebar .check { font-size: 13px; }
+  #pageNum { width: 56px; }
   #pagebar .spacer { flex: 1; }
   #pagebar .status { color: var(--muted); font-size: 12px; }
+  #pagebar .status:empty { display: none; }
+  /* the drawing tools fold away behind one button, on every screen */
+  body:not(.toolsOpen) #toolbar, body:not(.toolsOpen) #props { display: none !important; }
+  body.toolsOpen #toolsToggle { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
   /* block + auto margins, not flex centring: a page zoomed wider than the box
      must still scroll to its left edge */
   #pagebox { flex: 1; overflow: auto; padding: 10px; min-height: 0; }
@@ -149,7 +157,6 @@
   #view.dragging { user-select: none; cursor: col-resize; }
   /* a finger on the page draws or drags - it does not scroll the book */
   #layer.drawing, .ann, .handle { touch-action: none; }
-  #toolsToggle { display: none; }
 
   /* ---- the guide */
   .guideHint { margin: 14px 0 0; color: var(--muted); }
@@ -235,13 +242,10 @@
        the video with it */
     #right { min-height: 0; border-left: 0; }
   }
-  /* any small screen: the drawing tools fold away behind one button */
+  /* any small screen: shorter labels */
   @media (max-width: 800px), (max-height: 500px) {
-    #toolsToggle { display: inline-block; }
-    body:not(.toolsOpen) #toolbar, body:not(.toolsOpen) #props { display: none !important; }
     #status, #zoomPct, .lg { display: none; }
-    #pagebar { gap: 5px; padding: 5px 8px; }
-    #pagebar button, #pagebar input { padding: 4px 7px; }
+    #pagebar { gap: 5px; }
     #pageNum { width: 52px; }
     header { padding: 5px 10px; }
     header h1 { display: none; }
@@ -296,7 +300,7 @@
       <button id="zoomOut" title="Smaller (Ctrl + wheel)">−</button>
       <span id="zoomPct"></span>
       <button id="zoomIn" title="Larger (Ctrl + wheel)">+</button>
-      <button id="zoomFit" title="Page as wide as this side">Fit<span class="lg"> width</span></button>
+      <button id="zoomFit" title="Page as wide as this side">Fit</button>
       <span class="spacer"></span>
       <span class="status" id="status"></span>
     </div>
@@ -371,7 +375,7 @@
     <ol class="gLegend">
       <li><b>الفيديو</b> من يوتيوب.</li>
       <li><b>شريط الصفحات:</b> تقليب الصفحات والتحكم في الحجم.</li>
-      <li><b>الأدوات:</b> للكتابة والتعليم على الكتاب.</li>
+      <li><b>الأدوات:</b> للكتابة والتعليم على الكتاب. بتظهر لما تدوس <span class="gb">✏️ Tools</span>.</li>
       <li><b>الكتاب.</b></li>
       <li><b>الفاصل:</b> اسحبه يمين وشمال عشان تكبّر الفيديو أو الكتاب.</li>
       <li><b>Contents:</b> ترجعك لفهرس المحاضرات.</li>
@@ -390,7 +394,7 @@
       <tr><td><span class="gb">◀</span> <span class="gb">▶</span></td>
           <td>تقلب صفحة لورا أو لقدام، وكمان بأسهم الكيبورد. <b>الفيديو بيروح لوحده</b> لبداية الكلام اللي في الصفحة دي.</td></tr>
       <tr><td><span class="gb">64</span></td>
-          <td>رقم الصفحة: اكتب أي رقم ودوس <b>Enter</b> عشان تروح له.</td></tr>
+          <td>رقم الصفحة: اكتب أي رقم ودوس <b>Enter</b> عشان تروح له. ولو وقفت عليه بالماوس، بيقولك الصفحة دي بتبدأ عند أنهي دقيقة في الفيديو.</td></tr>
     </table>
     <div class="gNote">لما تختار أداة من أدوات الكتابة، <b>التقليب الأوتوماتيك بيقف</b> عشان الصفحة متتغيّرش وإنت بتكتب. ويرجع لما تدوس <span class="gb on">Read</span>.</div>
 
@@ -398,7 +402,7 @@
     <table class="gTable">
       <tr><td><span class="gb">−</span> <span class="gb">+</span></td>
           <td>تصغّر وتكبّر الكتاب. وعلى الكمبيوتر كمان: <b>Ctrl</b> مع عجلة الماوس.</td></tr>
-      <tr><td><span class="gb">Fit width</span></td>
+      <tr><td><span class="gb">Fit</span></td>
           <td>يرجّع الصفحة على قد العرض.</td></tr>
       <tr><td><b>الفاصل</b></td>
           <td>الخط اللي بين الفيديو والكتاب، اسحبه عشان تدي مساحة أكبر لأي واحد فيهم.</td></tr>
@@ -408,11 +412,11 @@
       <ul>
         <li><b>بالطول:</b> الفيديو فوق والكتاب تحت، وبينهم شريط صغير تسحبه لفوق وتحت.</li>
         <li><b>بالعرض:</b> الفيديو والكتاب جنب بعض زي الكمبيوتر.</li>
-        <li>أدوات الكتابة <b>مستخبية</b> عشان الكتاب ياخد مساحة. دوس <span class="gb">✏️ Tools</span> عشان تظهر.</li>
       </ul>
     </div>
 
     <h2><span class="gNum">٥</span> أدوات الكتابة والتعليم</h2>
+    <p>الأدوات <b>مستخبية</b> عشان الكتاب ياخد مساحة أكبر وإنت بتذاكر. دوس <span class="gb">✏️ Tools</span> عشان تظهر، ودوسه تاني عشان تختفي.</p>
     <p>كل اللي بتضيفه بيتحط <b>فوق</b> الكتاب، والكتاب نفسه مبيتغيّرش. اختار الأداة، وبعدين اشتغل على الصفحة:</p>
     <table class="gTable">
       <tr><td><span class="gb on">Read</span></td>
@@ -649,7 +653,9 @@ async function showPage(p) {
   $("prev").disabled = p <= 1;
   $("next").disabled = p >= state.pdf.numPages;
   const s = state.chapter && startOf(state.chapter, p);
-  $("status").textContent = (s !== null && s !== undefined) ? "starts at " + fmt(s) : "";
+  // where the page starts in the lecture: on the page number, not taking a line of its own
+  $("pageNum").title = (s !== null && s !== undefined) ? "This page starts at " + fmt(s) : "";
+  $("status").textContent = "";
   // one render at a time; the newest request wins
   if (state.rendering) { state.pendingPage = p; return; }
   state.rendering = true;
@@ -728,8 +734,11 @@ function applySplit() {
 applySplit();
 UPRIGHT.addEventListener("change", () => { applySplit(); redraw(); });
 
+// The drawing tools stay folded until asked for; the choice is remembered.
+if (recall("player.toolsOpen") === "1") document.body.classList.add("toolsOpen");
 $("toolsToggle").addEventListener("click", () => {
   const open = document.body.classList.toggle("toolsOpen");
+  remember("player.toolsOpen", open ? "1" : "0");
   if (!open && tool !== "read") setTool("read");
 });
 
