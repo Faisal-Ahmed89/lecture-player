@@ -151,6 +151,76 @@
   #layer.drawing, .ann, .handle { touch-action: none; }
   #toolsToggle { display: none; }
 
+  /* ---- the guide */
+  .guideHint { margin: 14px 0 0; color: var(--muted); }
+  .guideHint a { color: var(--accent); font-weight: 600; }
+  dialog#guide { width: min(820px, 96vw); max-height: 92vh; padding: 0; border: 1px solid var(--line);
+                 border-radius: 12px; background: var(--panel); color: var(--ink);
+                 font-family: "Segoe UI", Tahoma, system-ui, sans-serif; font-size: 15px; line-height: 1.75; }
+  dialog#guide::backdrop, dialog#notesDlg::backdrop { background: rgba(0, 0, 0, .45); }
+  .gHead { display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0;
+           padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--line); z-index: 1; }
+  .gBody { padding: 4px 20px 20px; }
+  .gBody h2 { font-size: 18px; margin: 26px 0 8px; display: flex; align-items: center; gap: 8px; }
+  .gBody h3 { font-size: 16px; margin: 18px 0 4px; }
+  .gNum { display: inline-flex; width: 28px; height: 28px; border-radius: 50%; align-items: center;
+          justify-content: center; background: var(--accent); color: var(--accent-ink); font-size: 15px; }
+  .gLead { font-size: 16px; margin-top: 14px; }
+  .gBody ol, .gBody ul { padding-right: 22px; padding-left: 0; margin: 6px 0; }
+  .gBody ol { list-style-type: arabic-indic; }
+  .gBody li { margin: 4px 0; }
+  .gNote { color: var(--muted); font-size: 14px; margin: 6px 0; }
+  .gBox { background: var(--hover); border-radius: 8px; padding: 10px 14px; margin: 10px 0; }
+  .gBox.warn { background: #fdecea; color: #7a1c10; }
+  .gWarn { font-size: 12px; background: #e53935; color: #fff; border-radius: 10px; padding: 0 8px; }
+  .gEnd { margin-top: 22px; color: var(--muted); }
+  .gTable { width: 100%; border-collapse: collapse; margin: 6px 0; }
+  .gTable td { border-bottom: 1px solid var(--line); padding: 8px 6px; vertical-align: top; }
+  .gTable td:first-child { white-space: nowrap; width: 1%; padding-left: 14px; }
+  /* buttons drawn as they look on screen; their own text reads left to right */
+  .gb { display: inline-block; direction: ltr; unicode-bidi: isolate; border: 1px solid var(--line);
+        border-radius: 6px; padding: 0 8px; background: var(--panel); font-size: 13px; line-height: 24px;
+        white-space: nowrap; font-family: system-ui, "Segoe UI", sans-serif; }
+  .gb.primary, .gb.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .gb.danger { color: #c0392b; }
+  .gb.sm { font-size: 12px; padding: 0 6px; }
+  .tb { color: #1f7a78; font-weight: 600; direction: ltr; unicode-bidi: isolate; }
+  .x { display: inline-block; width: 18px; height: 18px; line-height: 17px; text-align: center; border-radius: 50%;
+       background: #c0392b; color: #fff; font-size: 13px; }
+  .sw { display: inline-block; width: 18px; height: 18px; border-radius: 50%; margin-left: 4px; vertical-align: middle; }
+  /* the map of the screen, laid out as the screen is */
+  .gMap { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin: 10px 0;
+          font: 12px system-ui, sans-serif; color: var(--muted); max-width: 560px; }
+  .gMap i { font-style: normal; display: inline-flex; width: 24px; height: 24px; border-radius: 50%; background: #e53935;
+            color: #fff; font: 700 14px "Segoe UI", Tahoma, sans-serif; align-items: center; justify-content: center;
+            box-shadow: 0 0 0 2px #fff; }
+  .mHead { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  .mSp { flex: 1; }
+  .mBody { display: flex; height: 190px; }
+  .mVideo { flex: 1; background: #111; color: #e53935; font-size: 30px; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 8px; }
+  .mDiv { flex: 0 0 8px; background: var(--line); position: relative; }
+  .mDiv i { position: absolute; top: 60%; left: -8px; }
+  .mRight { flex: 1; display: flex; flex-direction: column; }
+  .mBar { display: flex; justify-content: space-between; align-items: center; padding: 4px 8px;
+          border-bottom: 1px solid var(--line); white-space: nowrap; overflow: hidden; }
+  .mPage { flex: 1; margin: 8px 18px; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.25); padding: 10px;
+           display: flex; flex-direction: column; gap: 6px; position: relative; }
+  .mPage span { height: 5px; background: #d5dae0; border-radius: 2px; }
+  .mPage span:nth-child(2n) { width: 75%; }
+  .mPage span.hl { background: #ffe680; }
+  .mPage i { position: absolute; bottom: 8px; left: 50%; margin-left: -12px; }
+  .gLegend li::marker { color: #e53935; font-weight: 700; }
+  /* a phone: each row of a table becomes the button over its explanation */
+  @media (max-width: 600px) {
+    .gBody { padding: 4px 14px 16px; }
+    .gTable tr { display: block; border-bottom: 1px solid var(--line); padding: 6px 0; }
+    .gTable td { display: block; width: auto !important; white-space: normal !important;
+                 border: 0; padding: 2px 0 !important; }
+    .gMap { font-size: 10px; }
+    .mBody { height: 150px; }
+  }
+
   /* A phone held upright: the video on top, the book under it, a bar between
      them dragged up and down. Held sideways it is the laptop layout. */
   @media (max-width: 800px) and (orientation: portrait) {
@@ -182,18 +252,20 @@
   <h1>Lecture Player</h1>
   <span class="title" id="hdr"></span>
   <button id="btnIndex" hidden>Contents</button>
+  <button id="btnGuide" title="طريقة الاستخدام">؟<span class="lg"> طريقة الاستخدام</span></button>
 </header>
 
 <section id="start">
   <div class="card">
     <h2>Open a course book</h2>
-    <p>Choose the course book - the PDF named <code>… - Course book.pdf</code>.</p>
+    <p>Choose the course book - the PDF with <b>(Player)</b> in its name.</p>
     <div id="drop">
       <label class="filebtn primary">Choose the book…
         <input id="files" type="file" accept=".pdf,.json,application/pdf" multiple hidden>
       </label>
       <div style="margin-top:8px;color:var(--muted)">or drop it here</div>
     </div>
+    <p class="guideHint" dir="rtl">أول مرة؟ <a href="#" id="openGuide">اقرا طريقة الاستخدام</a></p>
     <div id="msg"></div>
     <div id="fileWarn" hidden style="margin-top:12px;padding:10px 12px;border-radius:6px;
          background:#fdecea;color:#8a1f11">
@@ -252,6 +324,157 @@
   <div id="dlgList"></div>
 </dialog>
 
+<!-- The guide: Egyptian Arabic, for someone who was sent the link and the book
+     and nothing else. Buttons are drawn as the buttons themselves, so what is
+     read here is what is seen on screen. -->
+<dialog id="guide" dir="rtl" lang="ar">
+  <div class="gHead"><b>طريقة الاستخدام</b><button id="guideClose">قفل</button></div>
+  <div class="gBody">
+
+    <p class="gLead">البرنامج ده بيعرض <b>فيديو المحاضرة</b> و<b>الكتاب بتاعها</b> جنب بعض،
+      والكتاب <b>بيقلب لوحده</b> على الصفحة اللي المحاضر بيشرحها. وكمان تقدر تكتب وتعلّم على الكتاب وتحفظ ملاحظاتك.</p>
+
+    <h2><span class="gNum">١</span> البداية</h2>
+    <ol>
+      <li>نزّل كتاب الكورس من قناة <b dir="ltr">Orthopedic Lectures Archive</b> على تليجرام.
+        <div class="gBox">كل كورس ليه نسختين. نزّل <b>النسخة اللي في اسمها <span class="gb sm">(Player)</span></b>،
+          زي <span class="gb sm">Sport - Course book (Player).pdf</span>.
+          النسخة اللي في اسمها <span class="gb sm">(Photos)</span> للقراية بس، ومش بتشتغل هنا.</div></li>
+      <li>دوس <span class="gb primary">Choose the book…</span> واختار الملف ده.
+        <div class="gNote">على الموبايل: هتلاقيه في <b>التنزيلات (Downloads)</b>، أو في فولدر <b>Telegram</b>.</div></li>
+      <li>هيظهر <b>فهرس المحاضرات</b>. دوس على المحاضرة اللي عايزها.</li>
+      <li>شغّل الفيديو، والكتاب هيمشي معاه.</li>
+    </ol>
+    <div class="gNote">ترجع لفهرس المحاضرات في أي وقت من <span class="gb">Contents</span> فوق.</div>
+
+    <h2><span class="gNum">٢</span> شكل الشاشة</h2>
+    <div class="gMap" dir="ltr">
+      <div class="mHead">Lecture Player <span class="mSp"></span><span class="gb sm">Contents</span><i>٦</i></div>
+      <div class="mBody">
+        <div class="mVideo">▶<i>١</i></div>
+        <div class="mDiv"><i>٥</i></div>
+        <div class="mRight">
+          <div class="mBar">◀ 64 ▶ ☑ Follow video · Sync<i>٢</i></div>
+          <div class="mBar">Read · Highlight · Pen · Arrow · Text …<i>٣</i></div>
+          <div class="mPage"><span></span><span></span><span class="hl"></span><span></span><span></span><i>٤</i></div>
+        </div>
+      </div>
+    </div>
+    <ol class="gLegend">
+      <li><b>الفيديو</b> من يوتيوب.</li>
+      <li><b>شريط الصفحات:</b> تقليب الصفحات والتحكم في الحجم.</li>
+      <li><b>الأدوات:</b> للكتابة والتعليم على الكتاب.</li>
+      <li><b>الكتاب.</b></li>
+      <li><b>الفاصل:</b> اسحبه يمين وشمال عشان تكبّر الفيديو أو الكتاب.</li>
+      <li><b>Contents:</b> ترجعك لفهرس المحاضرات.</li>
+    </ol>
+
+    <h2><span class="gNum">٣</span> الكتاب ماشي مع الفيديو</h2>
+    <table class="gTable">
+      <tr><td><span class="gb">☑ Follow video</span></td>
+          <td>لما تكون متعلّمة، الصفحة بتقلب لوحدها مع الفيديو. <b>شيل العلامة</b> لو عايز تقرا براحتك من غير ما الصفحة تتغيّر.</td></tr>
+      <tr><td><span class="gb">Sync to video</span></td>
+          <td>يرجّعك على طول للصفحة اللي الفيديو واقف عندها.</td></tr>
+      <tr><td><span class="gb">◀</span> <span class="gb">▶</span></td>
+          <td>تقلب صفحة لورا أو لقدام، وكمان بأسهم الكيبورد. <b>الفيديو بيروح لوحده</b> لبداية الكلام اللي في الصفحة دي.</td></tr>
+      <tr><td><span class="gb">64</span></td>
+          <td>رقم الصفحة: اكتب أي رقم ودوس <b>Enter</b> عشان تروح له.</td></tr>
+    </table>
+    <div class="gNote">لما تختار أداة من أدوات الكتابة، <b>التقليب الأوتوماتيك بيقف</b> عشان الصفحة متتغيّرش وإنت بتكتب. ويرجع لما تدوس <span class="gb on">Read</span>.</div>
+
+    <h2><span class="gNum">٤</span> حجم الكتاب والشاشة</h2>
+    <table class="gTable">
+      <tr><td><span class="gb">−</span> <span class="gb">+</span></td>
+          <td>تصغّر وتكبّر الكتاب. وعلى الكمبيوتر كمان: <b>Ctrl</b> مع عجلة الماوس.</td></tr>
+      <tr><td><span class="gb">Fit width</span></td>
+          <td>يرجّع الصفحة على قد العرض.</td></tr>
+      <tr><td><b>الفاصل</b></td>
+          <td>الخط اللي بين الفيديو والكتاب، اسحبه عشان تدي مساحة أكبر لأي واحد فيهم.</td></tr>
+    </table>
+    <div class="gBox">
+      <b>على الموبايل:</b>
+      <ul>
+        <li><b>بالطول:</b> الفيديو فوق والكتاب تحت، وبينهم شريط صغير تسحبه لفوق وتحت.</li>
+        <li><b>بالعرض:</b> الفيديو والكتاب جنب بعض زي الكمبيوتر.</li>
+        <li>أدوات الكتابة <b>مستخبية</b> عشان الكتاب ياخد مساحة. دوس <span class="gb">✏️ Tools</span> عشان تظهر.</li>
+      </ul>
+    </div>
+
+    <h2><span class="gNum">٥</span> أدوات الكتابة والتعليم</h2>
+    <p>كل اللي بتضيفه بيتحط <b>فوق</b> الكتاب، والكتاب نفسه مبيتغيّرش. اختار الأداة، وبعدين اشتغل على الصفحة:</p>
+    <table class="gTable">
+      <tr><td><span class="gb on">Read</span></td>
+          <td><b>الوضع العادي</b> للقراية. ومنه تدوس على أي حاجة ضفتها عشان تحرّكها أو تعدّلها.</td></tr>
+      <tr><td><span class="gb">Highlight</span></td>
+          <td><b>هايلايتر:</b> اسحب على السطر. وفيه 4 ألوان: أصفر، أخضر، وردي، أزرق.</td></tr>
+      <tr><td><span class="gb">Pen</span></td>
+          <td><b>قلم حر:</b> اكتب أو ارسم بالماوس أو بصباعك. وتختار اللون والسُمك.</td></tr>
+      <tr><td><span class="gb">Arrow</span></td>
+          <td><b>سهم:</b> اسحب من ديل السهم لحد المكان اللي عايز تشاور عليه.</td></tr>
+      <tr><td><span class="gb">White-out</span></td>
+          <td><b>مستطيل أبيض:</b> اسحب على أي حاجة عايز تخفيها. وتقدر تكتب فوقه بعد كده بـ Text.</td></tr>
+      <tr><td><span class="gb">Text</span></td>
+          <td><b>مربع كلام:</b> دوس مكان ما عايز واكتب، عربي أو إنجليزي.</td></tr>
+      <tr><td><span class="gb">Time note</span></td>
+          <td><b>ملاحظة بوقت الفيديو:</b> بتتسجّل عليها الثانية اللي الفيديو واقف عندها. بعد كده لما تدوس على
+            <span class="tb">▶ 1:35</span> اللي فيها، الفيديو بيرجع للحظة دي بالظبط. مفيدة جداً عشان ترجع لشرح معيّن.</td></tr>
+      <tr><td><span class="gb">Undo</span></td>
+          <td>يرجّع آخر حاجة عملتها. وكمان <b>Ctrl+Z</b>.</td></tr>
+      <tr><td><span class="gb">My notes</span></td>
+          <td><b>قايمة بكل ملاحظاتك</b> في الكتاب، مترتبة بالمحاضرة والصفحة. دوس على أي واحدة توديك لها.</td></tr>
+    </table>
+
+    <h3>تعديل حاجة ضفتها</h3>
+    <ol>
+      <li>من وضع <span class="gb on">Read</span>، دوس على الحاجة. هيظهر حواليها <b>إطار</b> و<b>مربعات صغيرة</b>.</li>
+      <li><b>تحريك:</b> اسحبها من نصها.</li>
+      <li><b>تكبير وتصغير:</b> اسحب أي مربع صغير من اللي على الحواف. ومربع الكلام بيتغيّر عرضه بس، والطول بيظبط نفسه.</li>
+      <li><b>الكلام:</b> دوس جوه المربع واكتب أو امسح عادي.</li>
+    </ol>
+    <p>وهيظهر تحت الأدوات <b>شريط الخصائص</b>:</p>
+    <table class="gTable">
+      <tr><td><span class="gb">−</span> <span class="gb sm">10 pt</span> <span class="gb">+</span></td><td>حجم الكلام.</td></tr>
+      <tr><td><span class="sw" style="background:#111"></span><span class="sw" style="background:#d32f2f"></span><span class="sw" style="background:#1565c0"></span><span class="sw" style="background:#2e7d32"></span></td><td>اللون.</td></tr>
+      <tr><td><span class="gb"><b>B</b></span></td><td>كلام عريض.</td></tr>
+      <tr><td><span class="gb sm">none</span> <span class="gb sm">white</span> <span class="gb sm">yellow</span></td><td>خلفية مربع الكلام: من غير، أو أبيض، أو أصفر.</td></tr>
+      <tr><td><span class="gb sm">thin</span> <span class="gb sm">medium</span> <span class="gb sm">thick</span></td><td>سُمك القلم والسهم.</td></tr>
+      <tr><td><span class="gb">Duplicate</span></td><td>نسخة تانية من نفس الحاجة بنفس الشكل.</td></tr>
+      <tr><td><span class="gb danger">Delete</span></td><td>تمسحها. وكمان زرار <b>Delete</b> في الكيبورد، أو الـ <span class="x">×</span> الأحمر اللي بيظهر لما تقف عليها بالماوس.</td></tr>
+    </table>
+    <div class="gNote">لو ظبطت اللون والحجم <b>وإنت مختار أداة</b> ومفيش حاجة متعلّمة، كل اللي هتعمله بعد كده بالأداة دي هيطلع بنفس الشكل.
+      و<b>Esc</b> بيرجّعك لوضع Read.</div>
+
+    <h2><span class="gNum">٦</span> الحفظ <span class="gWarn">مهم</span></h2>
+    <div class="gBox warn">
+      ملاحظاتك بتتحفظ <b>لوحدها</b>، بس <b>على الجهاز ده وفي المتصفح ده بس</b>.
+      لو فتحت من جهاز تاني، أو مسحت بيانات المتصفح، <b>مش هتلاقيها</b>. عشان كده احفظها في ملف كل فترة.
+    </div>
+    <table class="gTable">
+      <tr><td><span class="gb">Save notes</span></td>
+          <td>يحفظ ملاحظاتك في <b>ملف صغير</b>. ده نسختك الاحتياطية، وكمان تنقل بيه ملاحظاتك لجهاز تاني أو تبعتها لزميل.</td></tr>
+      <tr><td><span class="gb">Open notes</span></td>
+          <td>يفتح ملف الملاحظات ده ويرجّع كل اللي فيه، على نفس الكتاب.</td></tr>
+      <tr><td><span class="gb primary">Save as PDF</span></td>
+          <td>يطلّع <b>نسخة جديدة من الكتاب</b> فيها كل ملاحظاتك مطبوعة، تطبعها أو تبعتها لأي حد. وملاحظات الوقت فيها بتفتح يوتيوب على اللحظة بتاعتها.
+            والنسخة دي تتفتح في البرنامج عادي.</td></tr>
+    </table>
+
+    <h2><span class="gNum">٧</span> لو حصلت مشكلة</h2>
+    <table class="gTable">
+      <tr><td><b>الفيديو مش بيشتغل</b></td>
+          <td>اتأكد إن النت شغال. ولو فيديو معيّن بس هو اللي مش شغال، يبقى غالباً صاحبه مانع تشغيله برّه يوتيوب.</td></tr>
+      <tr><td><b>رسالة: This PDF has no lecture timeline</b></td>
+          <td>غالباً نزّلت النسخة اللي بالصور. نزّل من القناة النسخة اللي في اسمها <span class="gb sm">(Player)</span>.</td></tr>
+      <tr><td><b>الصفحة مش بتقلب لوحدها</b></td>
+          <td>اتأكد إن <span class="gb">☑ Follow video</span> متعلّمة، وإن وضع <span class="gb on">Read</span> هو اللي شغال، وإنك مش واقف جوه مربع كلام.</td></tr>
+      <tr><td><b>ملاحظاتي اختفت</b></td>
+          <td>غالباً بيانات المتصفح اتمسحت أو فتحت من جهاز تاني. افتح آخر ملف حفظته بـ <span class="gb">Open notes</span>.</td></tr>
+    </table>
+
+    <p class="gEnd">تقدر تفتح الشرح ده تاني في أي وقت من زرار <span class="gb">؟ طريقة الاستخدام</span> فوق.</p>
+  </div>
+</dialog>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script>
@@ -305,9 +528,8 @@ async function openFiles(files) {
     } else {
       const att = (await state.pdf.getAttachments() || {})["timeline.json"];
       if (!att) {
-        $("msg").textContent = "This PDF has no lecture timeline inside it - it is not a "
-          + "course book, or it was built before the player existed. Choose its "
-          + ".timeline.json together with it.";
+        $("msg").textContent = "This PDF has no lecture timeline inside it. Choose the edition "
+          + "with (Player) in its name - the one with photos does not work here.";
         return;
       }
       state.timeline = JSON.parse(new TextDecoder("utf-8").decode(att.content));
@@ -591,8 +813,13 @@ const defaults = Object.assign(
   { hl: "yellow", ink: "#d32f2f", pen: "medium", fs: 0.016, color: "#111111", bold: false, bg: "none" },
   (() => { try { return JSON.parse(recall("player.defaults") || "{}"); } catch { return {}; } })());
 
+// The book is known by the name written INSIDE it (its timeline), not by its
+// file name: a file downloaded twice comes out as "... (1).pdf", and people
+// rename files - neither may lose the notes.
+const bookId = () => (state.timeline && state.timeline.book) || state.bookName;
+
 function loadNotes() {
-  notes.key = "player.notes." + state.bookName + "#" + state.pdf.numPages;
+  notes.key = "player.notes." + bookId() + "#" + state.pdf.numPages;
   notes.undo = [];
   selectedId = null;
   try { notes.list = JSON.parse(localStorage.getItem(notes.key) || "[]"); }
@@ -1098,7 +1325,7 @@ $("dlgClose").addEventListener("click", () => $("notesDlg").close());
 
 // ---- notes file: a backup, another device, a colleague - without the book
 $("saveNotes").addEventListener("click", async () => {
-  const data = { book: state.bookName, total_pages: state.pdf.numPages,
+  const data = { book: bookId(), total_pages: state.pdf.numPages,
                  saved: new Date().toISOString(), notes: notes.list };
   const name = state.bookName.replace(/\.pdf$/i, "") + " - notes.json";
   try {
@@ -1117,9 +1344,9 @@ $("notesFile").addEventListener("change", async e => {
   let data;
   try { data = JSON.parse(await f.text()); } catch { data = null; }
   if (!data || !Array.isArray(data.notes)) { $("saveState").textContent = "That is not a notes file."; return; }
-  if (data.total_pages !== state.pdf.numPages || data.book !== state.bookName) {
+  if (data.total_pages !== state.pdf.numPages || data.book !== bookId()) {
     if (!confirm(`These notes were made on "${data.book}" (${data.total_pages} pages).\n`
-               + `This book is "${state.bookName}" (${state.pdf.numPages} pages).\n\nAdd them anyway?`)) return;
+               + `This book is "${bookId()}" (${state.pdf.numPages} pages).\n\nAdd them anyway?`)) return;
   }
   const have = new Set(notes.list.map(a => a.id));
   const fresh = data.notes.filter(a => a && a.id && a.page && !have.has(a.id));
@@ -1276,6 +1503,19 @@ function noteImage(a, wPt) {
   }
   return { url: c.toDataURL("image/png"), h: c.height / S };
 }
+
+// ------------------------------------------------------------ the guide
+// Opens by itself the first time this browser sees the player, then only from
+// its button.
+function openGuide() { $("guide").showModal(); $("guide").scrollTop = 0; }
+$("btnGuide").addEventListener("click", openGuide);
+$("openGuide").addEventListener("click", e => { e.preventDefault(); openGuide(); });
+// remembered on the way out by any door: the button, Esc, or the close itself
+const guideSeen = () => remember("player.guideSeen", "1");
+$("guideClose").addEventListener("click", () => { guideSeen(); $("guide").close(); });
+$("guide").addEventListener("cancel", guideSeen);
+$("guide").addEventListener("close", guideSeen);
+if (!recall("player.guideSeen")) openGuide();
 
 function fmt(s) {
   s = Math.floor(s);
