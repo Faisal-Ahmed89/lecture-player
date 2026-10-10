@@ -142,16 +142,38 @@
   .noteRow .kind { flex: none; font-weight: 600; }
   .noteRow .snip { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #zoomPct { min-width: 44px; text-align: center; color: var(--muted); font-size: 12px; }
-  #divider { flex: 0 0 6px; cursor: col-resize; background: var(--line); }
+  #divider { flex: 0 0 6px; cursor: col-resize; background: var(--line); touch-action: none; }
   #divider:hover, #divider.drag { background: var(--accent); }
   /* while dragging, the YouTube frame would swallow the mouse */
   #view.dragging iframe { pointer-events: none; }
   #view.dragging { user-select: none; cursor: col-resize; }
-  @media (max-width: 800px) {
+  /* a finger on the page draws or drags - it does not scroll the book */
+  #layer.drawing, .ann, .handle { touch-action: none; }
+  #toolsToggle { display: none; }
+
+  /* A phone held upright: the video on top, the book under it, a bar between
+     them dragged up and down. Held sideways it is the laptop layout. */
+  @media (max-width: 800px) and (orientation: portrait) {
     #view.on { flex-direction: column; }
-    #left { flex: 0 0 auto !important; aspect-ratio: 16 / 9; }
-    #divider { display: none; }
-    #right { border-left: 0; border-top: 1px solid var(--line); }
+    #left { flex: 0 0 auto; aspect-ratio: 16 / 9; }
+    #divider { flex: 0 0 14px; cursor: row-resize; position: relative; }
+    #divider::after { content: ""; position: absolute; left: 50%; top: 5px; width: 40px; height: 4px;
+                      margin-left: -20px; border-radius: 2px; background: var(--muted); }
+    #view.dragging { cursor: row-resize; }
+    /* without this the book takes its full height and the whole screen scrolls,
+       the video with it */
+    #right { min-height: 0; border-left: 0; }
+  }
+  /* any small screen: the drawing tools fold away behind one button */
+  @media (max-width: 800px), (max-height: 500px) {
+    #toolsToggle { display: inline-block; }
+    body:not(.toolsOpen) #toolbar, body:not(.toolsOpen) #props { display: none !important; }
+    #status, #zoomPct, .lg { display: none; }
+    #pagebar { gap: 5px; padding: 5px 8px; }
+    #pagebar button, #pagebar input { padding: 4px 7px; }
+    #pageNum { width: 52px; }
+    header { padding: 5px 10px; }
+    header h1 { display: none; }
   }
 </style>
 </head>
@@ -194,11 +216,12 @@
       <button id="next" title="Next page (→)">▶</button>
       <label class="check" title="Turn the page as the lecture goes on">
         <input id="follow" type="checkbox" checked> Follow video</label>
-      <button id="sync" title="Show the page the video is on now">Sync to video</button>
+      <button id="sync" title="Show the page the video is on now">Sync<span class="lg"> to video</span></button>
+      <button id="toolsToggle" title="Show or hide the drawing tools">✏️ Tools</button>
       <button id="zoomOut" title="Smaller (Ctrl + wheel)">−</button>
       <span id="zoomPct"></span>
       <button id="zoomIn" title="Larger (Ctrl + wheel)">+</button>
-      <button id="zoomFit" title="Page as wide as this side">Fit width</button>
+      <button id="zoomFit" title="Page as wide as this side">Fit<span class="lg"> width</span></button>
       <span class="spacer"></span>
       <span class="status" id="status"></span>
     </div>
@@ -451,14 +474,31 @@ $("pagebox").addEventListener("wheel", e => {
   setZoom(zoom * (e.deltaY < 0 ? 1.1 : 1 / 1.1));
 }, { passive: false });
 
+// Upright phone: the divider runs across and sets the video's HEIGHT; anywhere
+// else it runs down and sets its width. Each is remembered on its own.
+const UPRIGHT = matchMedia("(max-width: 800px) and (orientation: portrait)");
+const splitKey = () => UPRIGHT.matches ? "player.splitV" : "player.split";
+
 function setSplit(pct) {
-  pct = Math.max(20, Math.min(80, pct));
+  pct = Math.max(UPRIGHT.matches ? 15 : 20, Math.min(UPRIGHT.matches ? 75 : 80, pct));
   $("left").style.flex = `0 0 ${pct}%`;
+  $("left").style.aspectRatio = "auto";
   $("right").style.flex = "1 1 0";
   return pct;
 }
-const savedSplit = parseFloat(recall("player.split"));
-if (savedSplit) setSplit(savedSplit);
+function applySplit() {
+  const saved = parseFloat(recall(splitKey()));
+  if (saved) { setSplit(saved); return; }
+  $("left").style.flex = $("left").style.aspectRatio = $("right").style.flex = "";
+}
+applySplit();
+UPRIGHT.addEventListener("change", () => { applySplit(); redraw(); });
+
+$("toolsToggle").addEventListener("click", () => {
+  const open = document.body.classList.toggle("toolsOpen");
+  if (!open && tool !== "read") setTool("read");
+});
+
 $("divider").addEventListener("pointerdown", e => {
   e.preventDefault();
   const view = $("view"), div = $("divider");
@@ -466,7 +506,8 @@ $("divider").addEventListener("pointerdown", e => {
   div.setPointerCapture(e.pointerId);
   const move = ev => {
     const r = view.getBoundingClientRect();
-    remember("player.split", setSplit((ev.clientX - r.left) / r.width * 100));
+    const pct = UPRIGHT.matches ? (ev.clientY - r.top) / r.height * 100 : (ev.clientX - r.left) / r.width * 100;
+    remember(splitKey(), setSplit(pct));
   };
   const up = () => {
     view.classList.remove("dragging"); div.classList.remove("drag");
