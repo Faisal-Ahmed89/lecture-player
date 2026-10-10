@@ -154,6 +154,7 @@
   /* ---- the guide */
   .guideHint { margin: 14px 0 0; color: var(--muted); }
   .guideHint a { color: var(--accent); font-weight: 600; }
+  .gLink { color: var(--accent); font-weight: 700; text-decoration: underline; unicode-bidi: isolate; }
   dialog#guide { width: min(820px, 96vw); max-height: 92vh; padding: 0; border: 1px solid var(--line);
                  border-radius: 12px; background: var(--panel); color: var(--ink);
                  font-family: "Segoe UI", Tahoma, system-ui, sans-serif; font-size: 15px; line-height: 1.75; }
@@ -335,8 +336,13 @@
       والكتاب <b>بيقلب لوحده</b> على الصفحة اللي المحاضر بيشرحها. وكمان تقدر تكتب وتعلّم على الكتاب وتحفظ ملاحظاتك.</p>
 
     <h2><span class="gNum">١</span> البداية</h2>
+    <div class="gBox warn"><b>على موبايل أو تابلت أندرويد: لازم تفتح البرنامج من Google Chrome.</b>
+      ولو فتحت اللينك من جوه تليجرام أو واتساب وفتح جواهم، دوس على النقط التلاتة فوق واختار
+      <b>Open in Chrome</b>.</div>
     <ol>
-      <li>نزّل كتاب الكورس من قناة <b dir="ltr">Orthopedic Lectures Archive</b> على تليجرام.
+      <li>نزّل كتاب الكورس من قناة
+        <a class="gLink" dir="ltr" href="https://t.me/+kIVNTxEaa3MzNTI0" target="_blank" rel="noopener">Orthopedic Lectures Archive</a>
+        على تليجرام.
         <div class="gBox">كل كورس ليه نسختين. نزّل <b>النسخة اللي في اسمها <span class="gb sm">(Player)</span></b>،
           زي <span class="gb sm">Sport - Course book (Player).pdf</span>.
           النسخة اللي في اسمها <span class="gb sm">(Photos)</span> للقراية بس، ومش بتشتغل هنا.</div></li>
@@ -462,7 +468,7 @@
     <h2><span class="gNum">٧</span> لو حصلت مشكلة</h2>
     <table class="gTable">
       <tr><td><b>الفيديو مش بيشتغل</b></td>
-          <td>اتأكد إن النت شغال. ولو فيديو معيّن بس هو اللي مش شغال، يبقى غالباً صاحبه مانع تشغيله برّه يوتيوب.</td></tr>
+          <td>اتأكد إن النت شغال، وإنك فاتح من <b>Google Chrome</b> لو على أندرويد. ولو فيديو معيّن بس هو اللي مش شغال، يبقى غالباً صاحبه مانع تشغيله برّه يوتيوب.</td></tr>
       <tr><td><b>رسالة: This PDF has no lecture timeline</b></td>
           <td>غالباً نزّلت النسخة اللي بالصور. نزّل من القناة النسخة اللي في اسمها <span class="gb sm">(Player)</span>.</td></tr>
       <tr><td><b>الصفحة مش بتقلب لوحدها</b></td>
