@@ -289,6 +289,8 @@
       <button id="next" title="Next page (→)">▶</button>
       <label class="check" title="Turn the page as the lecture goes on">
         <input id="follow" type="checkbox" checked> Follow video</label>
+      <label class="check" title="Stop the video each time a page is finished, to go over it">
+        <input id="pauseAtEnd" type="checkbox"> Pause<span class="lg"> at page end</span></label>
       <button id="sync" title="Show the page the video is on now">Sync<span class="lg"> to video</span></button>
       <button id="toolsToggle" title="Show or hide the drawing tools">✏️ Tools</button>
       <button id="zoomOut" title="Smaller (Ctrl + wheel)">−</button>
@@ -379,6 +381,10 @@
     <table class="gTable">
       <tr><td><span class="gb">☑ Follow video</span></td>
           <td>لما تكون متعلّمة، الصفحة بتقلب لوحدها مع الفيديو. <b>شيل العلامة</b> لو عايز تقرا براحتك من غير ما الصفحة تتغيّر.</td></tr>
+      <tr><td><span class="gb">☐ Pause at page end</span></td>
+          <td><b>للمراجعة:</b> لما تعلّم عليها، الفيديو <b>بيقف لوحده كل ما صفحة تخلص</b>، والصفحة دي بتفضل قدامك تراجعها براحتك.
+            ولما تدوس Play، الكتاب بيقلب على الصفحة اللي بعدها والفيديو بيكمّل.
+            <div class="gNote">بتشتغل مع <span class="gb">☑ Follow video</span>، ومش متعلّمة في الأول. وعلى الموبايل اسمها <span class="gb">Pause</span> بس.</div></td></tr>
       <tr><td><span class="gb">Sync to video</span></td>
           <td>يرجّعك على طول للصفحة اللي الفيديو واقف عندها.</td></tr>
       <tr><td><span class="gb">◀</span> <span class="gb">▶</span></td>
@@ -791,8 +797,21 @@ function followTick(force) {
   // never turn the page under someone drawing or typing on it
   if (!force && (tool !== "read" || (document.activeElement && document.activeElement.isContentEditable))) return;
   const playing = state.player.getPlayerState() === YT.PlayerState.PLAYING;
-  if (!force && !playing) return;
-  const want = pageAt(state.chapter, state.player.getCurrentTime());
+  if (!force && !playing) { state.lastT = null; return; }
+  const t = state.player.getCurrentTime();
+  // playing on by itself, not a jump the reader made by seeking
+  const natural = state.lastT != null && t >= state.lastT && t - state.lastT < 2.5;
+  state.lastT = t;
+  const want = pageAt(state.chapter, t);
+  // "Pause at page end": the lecture has just run past the end of the page on
+  // screen - stop there and leave that page up to be gone over. The next Play
+  // goes on to the new page (pauseFor lets that one turn through).
+  if (!force && natural && $("pauseAtEnd").checked && want > state.page && state.pauseFor !== want) {
+    state.player.pauseVideo();
+    state.pauseFor = want;
+    $("status").textContent = "Paused at the end of the page - press play to go on";
+    return;
+  }
   if (want !== state.page) showPage(want);
 }
 setInterval(followTick, 500);
