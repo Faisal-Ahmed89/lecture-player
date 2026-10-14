@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ask AI</title>
+<!--
+  Ask AI - opened by the "Ask AI" link beside a heading of the course book.
+
+  The section travels inside the link, after the '#' (handbook/tools/ask_ai.py
+  writes it): raw-deflated JSON {l: lecture, t: heading, b: text}, base64url,
+  behind "1.". What follows '#' is never sent to any server - it is read here,
+  on the reader's device, and turned into a prompt to copy or to open in an AI.
+-->
+<style>
+  :root {
+    --bg: #f4f6f8; --panel: #ffffff; --ink: #1d2733; --muted: #66727f;
+    --line: #dde3e9; --accent: #1f7a78; --accent-ink: #ffffff; --hover: #eaf3f3;
+    --warn: #b35400;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12171c; --panel: #1b2229; --ink: #e3e8ee; --muted: #8e9aa6;
+      --line: #2c353f; --accent: #3aa8a4; --accent-ink: #0d1316; --hover: #22303a;
+      --warn: #f0a050;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.6 system-ui, "Segoe UI", Tahoma, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 18px 16px 40px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+          padding: 16px; margin-bottom: 14px; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .ltr { direction: ltr; unicode-bidi: isolate; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .heading { font-size: 17px; font-weight: 600; margin-top: 6px; }
+  h2 { font-size: 15px; margin: 0 0 10px; }
+  .modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; }
+  .mode { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; cursor: pointer;
+          background: var(--panel); text-align: start; font: inherit; color: var(--ink); }
+  .mode:hover { background: var(--hover); }
+  .mode b { display: block; }
+  .mode span { color: var(--muted); font-size: 13px; }
+  .mode[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+  label.opt { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+  textarea { width: 100%; font: inherit; color: var(--ink); background: var(--bg);
+             border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; resize: vertical; }
+  #prompt { min-height: 200px; font-size: 13.5px; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  button { font: inherit; color: var(--ink); background: var(--panel); cursor: pointer;
+           border: 1px solid var(--line); border-radius: 6px; padding: 7px 14px; }
+  button:hover { background: var(--hover); }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  #toast { min-height: 1.6em; margin-top: 8px; color: var(--accent); font-size: 13.5px; }
+  #err { color: #c0392b; }
+  .warn { color: var(--warn); font-size: 13px; }
+  details pre { white-space: pre-wrap; direction: ltr; text-align: left; font: 13px/1.5 inherit;
+                font-family: system-ui, sans-serif; margin: 8px 0 0; max-height: 320px; overflow: auto; }
+</style>
+</head>
+<body>
+<main>
+  <div class="card" id="head">
+    <h1>اسأل الـ AI عن الجزء ده</h1>
+    <div class="muted ltr" id="lecture"></div>
+    <div class="heading ltr" id="title"></div>
+    <div class="warn" id="cut" hidden>الجزء ده طويل، فاتبعت أول جزء منه بس.</div>
+    <details>
+      <summary class="muted">النص اللي هيتبعت</summary>
+      <pre id="body"></pre>
+    </details>
+  </div>
+
+  <div class="card" id="ask">
+    <h2>عايز إيه؟</h2>
+    <div class="modes" id="modes"></div>
+    <div class="row">
+      <span class="muted">لغة الرد:</span>
+      <label class="opt"><input type="radio" name="lang" value="ar" checked> عربي مصري ومصطلحات بالإنجليزي</label>
+      <label class="opt"><input type="radio" name="lang" value="en"> English</label>
+    </div>
+    <div style="margin-top:12px">
+      <div class="muted">سؤالك (اختياري):</div>
+      <textarea id="extra" rows="2" placeholder="مثلاً: مش فاهم الفرق بين النوعين"></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>السؤال</h2>
+    <textarea id="prompt" spellcheck="false"></textarea>
+    <div class="actions">
+      <button class="primary" id="copy">انسخ السؤال</button>
+      <button data-ai="claude">افتح في Claude</button>
+      <button data-ai="chatgpt">افتح في ChatGPT</button>
+      <button data-ai="gemini">افتح في Gemini</button>
+    </div>
+    <div id="toast"></div>
+    <div class="muted">تقدر تعدّل السؤال قبل ما تنسخه.</div>
+  </div>
+  <div id="err"></div>
+</main>
+
+<script>
+const MODES = {
+  simplify: {
+    name: "بسّط واشرح",
+    hint: "الفكرة الأساسية وبعدين التفاصيل",
+    ar: "اشرحلي الجزء ده ببساطة كأني بذاكره لأول مرة: ابدأ بالفكرة الأساسية في سطرين، وبعدين التفاصيل خطوة خطوة، واربطها بمثال إكلينيكي لو ينفع.",
+    en: "Explain this section simply, as if I am studying it for the first time: start with the core idea in two lines, then the details step by step, with a clinical example where it helps."
+  },
+  clarify: {
+    name: "وضّح الغامض",
+    hint: "الجمل اللي مش واضحة أو فيها غلط تفريغ",
+    ar: "الجزء ده متفرّغ من محاضرة صوتية، فممكن يكون فيه جمل ناقصة أو غامضة أو كلمة اتفرّغت غلط. حدّد الأماكن اللي مش واضحة، ووضّح المقصود منها، ونبّهني لو فيه معلومة شكلها غلط.",
+    en: "This section was transcribed from a recorded lecture, so some sentences may be incomplete, unclear or mis-transcribed. Point out what is unclear, explain what was most likely meant, and flag anything that looks wrong."
+  },
+  update: {
+    name: "فيه تحديثات؟",
+    hint: "حاجة اتغيّرت في الـ guidelines أو العلاج",
+    ar: "الجزء ده من محاضرة متسجّلة في وقت معيّن. هل فيه أي معلومة فيه اتغيّرت أو اتحدّثت بعد كده، في الـ guidelines أو التصنيفات أو طرق العلاج؟ اذكر كل تحديث ومصدره (الجهة والسنة)، ولو مش متأكد قول كده بوضوح.",
+    en: "This section comes from a lecture recorded at a certain time. Has anything in it been changed or updated since - guidelines, classifications or treatment? Name each update and its source (body and year), and say clearly when you are not sure."
+  }
+};
+const LANG_LINE = {
+  ar: "رد بالعربي المصري، والمصطلحات الطبية سيبها بالإنجليزي.",
+  en: "Answer in English."
+};
+const AI = {
+  claude:  q => "https://claude.ai/new" + (q ? "?q=" + encodeURIComponent(q) : ""),
+  chatgpt: q => "https://chatgpt.com/" + (q ? "?q=" + encodeURIComponent(q) : ""),
+  gemini:  () => "https://gemini.google.com/app"       // takes no question in the link
+};
+const MAX_IN_LINK = 6000;      // past this the question is pasted, not carried in the link
+
+const $ = id => document.getElementById(id);
+let data = null, mode = "simplify";
+
+function store(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function load(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+
+async function decode(hash) {
+  const m = /^#1\.([A-Za-z0-9_-]+)$/.exec(hash);
+  if (!m) throw new Error("bad link");
+  let s = m[1].replace(/-/g, "+").replace(/_/g, "/");
+  while (s.length % 4) s += "=";
+  const bytes = Uint8Array.from(atob(s), c => c.charCodeAt(0));
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+  return JSON.parse(await new Response(stream).text());
+}
+
+function build() {
+  const lang = document.querySelector("input[name=lang]:checked").value;
+  const M = MODES[mode];
+  const extra = $("extra").value.trim();
+  const intro = lang === "ar"
+    ? `ده جزء من كتاب مذاكرة طبي معمول من محاضرة جامعية مسجّلة.\nالمحاضرة: ${data.l}\nالجزء: ${data.t}`
+    : `This is part of a medical study book made from a recorded university lecture.\nLecture: ${data.l}\nSection: ${data.t}`;
+  let p = `${intro}\n\n${M[lang]}`;
+  if (extra) p += (lang === "ar" ? "\n\nوسؤالي كمان: " : "\n\nMy own question: ") + extra;
+  p += `\n\n${LANG_LINE[lang]}\n\n"""\n${data.b}\n"""`;
+  $("prompt").value = p;
+}
+
+async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); return true; }
+  catch (e) {
+    const ta = $("prompt"); ta.select();
+    try { return document.execCommand("copy"); } catch (e2) { return false; }
+  }
+}
+function toast(t) { $("toast").textContent = t; }
+
+async function openAI(name) {
+  const q = $("prompt").value;
+  const copied = await copyText(q);
+  const inLink = name !== "gemini" && q.length <= MAX_IN_LINK;
+  window.open(AI[name](inLink ? q : ""), "_blank", "noopener");
+  toast(inLink ? "اتفتح والسؤال جاهز" + (copied ? "، واتنسخ كمان." : ".")
+       : copied ? "اتنسخ السؤال: الصقه هناك بـ Ctrl+V (أو الصق على الموبايل)."
+                : "مقدرتش أنسخ: انسخ السؤال من فوق بإيدك.");
+}
+
+function renderModes() {
+  const box = $("modes");
+  box.innerHTML = "";
+  for (const [k, M] of Object.entries(MODES)) {
+    const b = document.createElement("button");
+    b.className = "mode";
+    b.setAttribute("aria-pressed", k === mode);
+    b.innerHTML = `<b>${M.name}</b><span>${M.hint}</span>`;
+    b.onclick = () => { mode = k; store("ask.mode", k); renderModes(); build(); };
+    box.appendChild(b);
+  }
+}
+
+// another heading's link opened in this same tab: read the new section
+addEventListener("hashchange", () => location.reload());
+
+(async () => {
+  try {
+    data = await decode(location.hash);
+  } catch (e) {
+    $("head").hidden = $("ask").hidden = true;
+    document.querySelectorAll(".card")[2].hidden = true;
+    $("err").textContent = typeof DecompressionStream === "undefined"
+      ? "المتصفح ده قديم ومش بيقدر يفتح الصفحة. حدّثه أو افتح اللينك من Chrome."
+      : "اللينك ده ناقص أو اتقطع. افتحه تاني من الكتاب.";
+    return;
+  }
+  $("lecture").textContent = data.l;
+  $("title").textContent = data.t;
+  $("body").textContent = data.b;
+  $("cut").hidden = !data.cut;
+  document.title = "Ask AI - " + data.t;
+  mode = MODES[load("ask.mode")] ? load("ask.mode") : "simplify";
+  const lang = load("ask.lang");
+  if (lang === "en" || lang === "ar")
+    document.querySelector(`input[name=lang][value=${lang}]`).checked = true;
+  document.querySelectorAll("input[name=lang]").forEach(r =>
+    r.onchange = () => { store("ask.lang", r.value); build(); });
+  $("extra").oninput = build;
+  $("copy").onclick = async () =>
+    toast(await copyText($("prompt").value) ? "اتنسخ. الصقه في أي AI." : "مقدرتش أنسخ: انسخه بإيدك.");
+  document.querySelectorAll("button[data-ai]").forEach(b => b.onclick = () => openAI(b.dataset.ai));
+  renderModes();
+  build();
+})();
+</script>
+</body>
+</html>
