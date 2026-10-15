@@ -98,6 +98,12 @@
   #toolbar .status { color: var(--muted); font-size: 12px; }
   button.tool.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
   #layer { position: absolute; inset: 0; }
+  /* the book's own links, over the notes; only the link boxes take a click,
+     and none at all while a writing tool is on */
+  #links { position: absolute; inset: 0; pointer-events: none; }
+  #links a { position: absolute; pointer-events: auto; cursor: pointer; border-radius: 2px; }
+  #links a:hover { background: rgba(46, 92, 138, .14); }
+  #layer.drawing + #links { display: none; }
   #layer.drawing { cursor: crosshair; }
   .ann { position: absolute; }
   .ann.hl { background: rgba(255, 230, 0, .38); mix-blend-mode: multiply; }
@@ -322,7 +328,7 @@
       <button id="exportPdf" class="primary" title="A new PDF: the book with everything you added">Save as PDF</button>
     </div>
     <div id="props" hidden></div>
-    <div id="pagebox"><div id="pagewrap"><canvas id="canvas"></canvas><div id="layer" class="reading"></div></div></div>
+    <div id="pagebox"><div id="pagewrap"><canvas id="canvas"></canvas><div id="layer" class="reading"></div><div id="links"></div></div></div>
   </div>
 </section>
 
@@ -765,6 +771,7 @@ async function showPage(p) {
     c.width = vp.width; c.height = vp.height;
     c.style.width = (vp.width / dpr) + "px"; c.style.height = (vp.height / dpr) + "px";
     await page.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
+    await drawLinks(page, page.getViewport({ scale }));
     if (p !== state.drawnPage) box.scrollTop = 0;     // a new page starts at its top
     state.drawnPage = p;
     drawNotes();
@@ -777,6 +784,76 @@ async function showPage(p) {
     }
   }
 }
+// ------------------------------------------------------------ the book's links
+// The page is drawn as a picture, so its links are laid over it here, from the
+// PDF's own link annotations:
+//   a place in the book (contents, "see Fig.", "back to text", ↑ Chapter/Book)
+//                          -> turns to that page, the video following;
+//   this lecture on YouTube (the footer time, "Watch Original Lecture")
+//                          -> moves the video that is playing to that moment;
+//   anything else (Ask AI, e-mail, other sites) -> a new tab.
+async function drawLinks(page, vp) {
+  const box = $("links");
+  box.innerHTML = "";
+  let anns = [];
+  try { anns = await page.getAnnotations({ intent: "display" }); } catch { return; }
+  for (const a of anns) {
+    if (a.subtype !== "Link") continue;
+    const target = a.url || a.unsafeUrl || null;
+    if (!target && !a.dest) continue;
+    const [x1, y1, x2, y2] = vp.convertToViewportRectangle(a.rect);
+    const el = document.createElement("a");
+    Object.assign(el.style, { left: Math.min(x1, x2) + "px", top: Math.min(y1, y2) + "px",
+      width: Math.abs(x2 - x1) + "px", height: Math.abs(y2 - y1) + "px" });
+    if (target) {
+      el.href = target;
+      el.title = linkTitle(target);
+      el.target = "_blank";
+      el.rel = "noopener";
+      el.addEventListener("click", e => { if (seekFromLink(target)) e.preventDefault(); });
+    } else {
+      el.href = "#";
+      el.addEventListener("click", e => { e.preventDefault(); goToDest(a.dest); });
+    }
+    box.appendChild(el);
+  }
+}
+
+function linkTitle(u) {
+  if (u.startsWith("mailto:")) return u.slice(7);
+  if (u.includes("ask.html")) return "Ask AI about this section";
+  return u.length > 80 ? u.slice(0, 77) + "..." : u;
+}
+
+// A link to the lecture that is loaded: the video goes there instead of
+// YouTube opening in a new tab. Returns true when it handled the click.
+function seekFromLink(u) {
+  const id = videoIdOf(u);
+  if (!id || !state.playerReady || id !== state.videoId) return false;
+  let t = 0;
+  try {
+    const raw = new URL(u).searchParams.get("t") || new URL(u).searchParams.get("start") || "0";
+    const m = /^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s?)?$/.exec(raw);
+    if (m) t = (+m[1] || 0) * 3600 + (+m[2] || 0) * 60 + (+m[3] || 0);
+  } catch {}
+  state.player.seekTo(t, true);
+  state.player.playVideo();
+  return true;
+}
+
+async function goToDest(dest) {
+  try {
+    const d = typeof dest === "string" ? await state.pdf.getDestination(dest) : dest;
+    if (!d) return;
+    const ref = d[0];
+    const idx = (typeof ref === "object" && ref !== null) ? await state.pdf.getPageIndex(ref)
+              : Number.isInteger(ref) ? ref : null;
+    if (idx !== null) goToPage(idx + 1, true);
+  } catch (err) {
+    console.warn("Lecture Player: could not follow a link in the book -", err);
+  }
+}
+
 let resizeTimer;
 function redraw() {
   clearTimeout(resizeTimer);
