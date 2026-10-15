@@ -595,11 +595,11 @@ async function openFromLink() {
   const name = decodeURIComponent(url.pathname.split("/").pop());
   $("msg").style.color = "var(--muted)";
   $("msg").textContent = "Loading the book ...";
-  let file;
+  let file, note = "";
   try {
-    const r = await fetch(url);
-    if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
-    file = new File([await r.blob()], name, { type: "application/pdf" });
+    const got = await fetchBook(url);
+    file = new File([got.blob], name, { type: "application/pdf" });
+    note = got.note;
   } catch (err) {
     $("msg").style.color = "";
     $("msg").textContent = `Could not load ${name}: ${err.message}\nChoose the book's PDF instead.`;
@@ -607,12 +607,57 @@ async function openFromLink() {
   }
   $("msg").style.color = "";
   await openFiles([file]);
+  if (note && !$("msg").textContent) {
+    $("msg").style.color = "var(--muted)";
+    $("msg").textContent = note;
+  }
   if (!state.timeline || state.bookName !== name) return;      // openFiles said why
   const n = parseInt(q.get("lecture"), 10);
   const ch = state.timeline.chapters.find(c => c.chapter === n);
   if (ch) openChapter(ch);
 }
-openFromLink();
+// Each book is downloaded once per reader and kept in the browser (Cache
+// Storage). Every later open only asks the site whether the book changed
+// (If-None-Match / If-Modified-Since): "304 not modified" costs a few bytes,
+// a rebuilt book comes down in full and replaces the kept one. With no
+// network the kept copy opens - and the reader is told so.
+const BOOK_CACHE = "lecture-books-v1";
+
+async function fetchBook(url) {
+  let cache = null, kept = null;
+  try { cache = await caches.open(BOOK_CACHE); kept = await cache.match(url.href); }
+  catch { cache = null; }                  // no Cache Storage here: plain download
+  const headers = {};
+  if (kept) {
+    const etag = kept.headers.get("ETag"), mod = kept.headers.get("Last-Modified");
+    if (etag) headers["If-None-Match"] = etag;
+    if (mod) headers["If-Modified-Since"] = mod;
+  }
+  let r;
+  try {
+    r = await fetch(url.href, { cache: "no-store", headers });
+  } catch (err) {
+    if (kept) return { blob: await kept.blob(), note: "Offline - this is the copy saved on this device." };
+    throw err;
+  }
+  if (r.status === 304 && kept) return { blob: await kept.blob(), note: "" };
+  if (!r.ok) {
+    if (kept) return { blob: await kept.blob(),
+                       note: `The site answered ${r.status} - this is the copy saved on this device.` };
+    throw new Error(`${r.status} ${r.statusText}`);
+  }
+  const blob = await r.blob();
+  if (cache) {
+    try {
+      // kept with the headers that tell, next time, whether it changed
+      const h = new Headers({ "Content-Type": "application/pdf" });
+      for (const k of ["ETag", "Last-Modified"]) if (r.headers.get(k)) h.set(k, r.headers.get(k));
+      await cache.put(url.href, new Response(blob, { headers: h }));
+    } catch (e) { console.warn("Lecture Player: could not keep the book on this device -", e); }
+  }
+  return { blob, note: "" };
+}
+openFromLink();                 // after BOOK_CACHE above is defined
 
 function showIndex() {
   const ul = $("chapters");
