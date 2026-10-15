@@ -284,6 +284,7 @@
       YouTube refuses that (its "Error 153"). Close this tab and start the player with:
       <pre style="margin:6px 0 0">python handbook/player/serve.py</pre>
     </div>
+    <button id="resume" class="primary" hidden style="margin:0 0 10px"></button>
     <ul id="chapters"></ul>
   </div>
 </section>
@@ -620,7 +621,9 @@ async function openFromLink() {
   if (!state.timeline || state.bookName !== name) return;      // openFiles said why
   const n = parseInt(q.get("lecture"), 10);
   const ch = state.timeline.chapters.find(c => c.chapter === n);
-  if (ch) openChapter(ch);
+  const pos = savedPos();
+  if (ch && pos && pos.chapter === n) openChapter(ch, pos.page, pos.sec);   // where he left it
+  else if (ch) openChapter(ch);
 }
 // Each book is downloaded once per reader and kept in the browser (Cache
 // Storage). Every later open only asks the site whether the book changed
@@ -678,6 +681,13 @@ function showIndex() {
     li.addEventListener("click", () => openChapter(ch));
     ul.appendChild(li);
   }
+  const pos = savedPos();
+  const rch = pos && state.timeline.chapters.find(c => c.chapter === pos.chapter);
+  $("resume").hidden = !rch;
+  if (rch) {
+    $("resume").textContent = `▶ Continue: Lecture ${rch.chapter} · page ${pos.page} · ${fmt(pos.sec || 0)}`;
+    $("resume").onclick = () => openChapter(rch, pos.page, pos.sec);
+  }
   $("start").style.display = "";
   $("view").classList.remove("on");
   $("btnIndex").hidden = true;
@@ -705,7 +715,7 @@ function startOf(ch, page) {
   return p ? p.start_sec : null;
 }
 
-function openChapter(ch, page) {
+function openChapter(ch, page, resumeSec) {
   state.chapter = ch;
   $("start").style.display = "none";
   $("view").classList.add("on");
@@ -713,7 +723,8 @@ function openChapter(ch, page) {
   $("hdr").textContent = `${ch.chapter}. ${ch.title}`;
   const first = page || (ch.pages.length ? ch.pages[0].page : ch.first_page);
   showPage(first);
-  loadVideo(ch, startOf(ch, first) || 0);
+  if (resumeSec != null) loadVideo(ch, resumeSec, true);     // back where he left: video waits
+  else loadVideo(ch, startOf(ch, first) || 0);
 }
 
 // Moving through the book by hand takes the lecture with it: the video goes to
@@ -942,14 +953,14 @@ function videoIdOf(url) {
   } catch { return null; }
 }
 
-function loadVideo(ch, start) {
+function loadVideo(ch, start, cue) {
   const id = videoIdOf(ch.video_url);
   if (!id) {
     $("status").textContent = "This lecture has no video link.";
     return;
   }
   if (!window.YT || !YT.Player) {           // the API is still loading
-    state.waiting = () => loadVideo(ch, start);
+    state.waiting = () => loadVideo(ch, start, cue);
     return;
   }
   if (!state.player) {
@@ -958,7 +969,10 @@ function loadVideo(ch, start) {
       events: { onReady: () => { state.playerReady = true; } },
     });
   } else if (state.playerReady) {
-    if (state.videoId === id) state.player.seekTo(start, true);
+    if (state.videoId === id) {
+      state.player.seekTo(start, true);
+      if (cue) state.player.pauseVideo();
+    } else if (cue) state.player.cueVideoById({ videoId: id, startSeconds: start });
     else state.player.loadVideoById({ videoId: id, startSeconds: start });
   }
   state.videoId = id;
@@ -994,6 +1008,27 @@ function followTick(force) {
   if (want !== state.page) showPage(want);
 }
 setInterval(followTick, 500);
+
+// ------------------------------------------------------------ where he left off
+// Per book, in this browser: the lecture, the page and the second of the video.
+// Saved every few seconds while a lecture is open and when the tab is left;
+// offered back as "Continue" over the lecture list, and used at once when a
+// link opens that same lecture.
+const posKey = () => "player.pos." + (state.bookName || "");
+function savedPos() {
+  try { return JSON.parse(recall(posKey()) || "null"); } catch { return null; }
+}
+function savePos() {
+  if (!state.chapter || !$("view").classList.contains("on")) return;
+  let sec = null;
+  try { if (state.playerReady) sec = Math.floor(state.player.getCurrentTime()); } catch {}
+  const old = savedPos();
+  if (sec == null) sec = old && old.chapter === state.chapter.chapter ? old.sec : 0;
+  remember(posKey(), JSON.stringify({ chapter: state.chapter.chapter, page: state.page, sec }));
+}
+setInterval(savePos, 5000);
+addEventListener("pagehide", savePos);
+document.addEventListener("visibilitychange", () => { if (document.hidden) savePos(); });
 
 // ------------------------------------------------------------ the notes layer
 // What the reader adds lives OVER the book, never in it: a list of notes per
