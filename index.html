@@ -348,15 +348,16 @@
     <ol>
       <li>نزّل كتاب الكورس من قناة
         <a class="gLink" dir="ltr" href="https://t.me/+kIVNTxEaa3MzNTI0" target="_blank" rel="noopener">Orthopedic Lectures Archive</a>
-        على تليجرام.
-        <div class="gBox">كل كورس ليه نسختين. نزّل <b>النسخة اللي في اسمها <span class="gb sm">(Player)</span></b>،
-          زي <span class="gb sm">Sport - Course book (Player).pdf</span>.
-          النسخة اللي في اسمها <span class="gb sm">(Photos)</span> للقراية بس، ومش بتشتغل هنا.</div></li>
-      <li>دوس <span class="gb primary">Choose the book…</span> واختار الملف ده.
-        <div class="gNote">على الموبايل: هتلاقيه في <b>التنزيلات (Downloads)</b>، أو في فولدر <b>Telegram</b>.</div></li>
-      <li>هيظهر <b>فهرس المحاضرات</b>. دوس على المحاضرة اللي عايزها.</li>
+        على تليجرام.</li>
+      <li>من جوه الكتاب، دوس اللينك اللي بيفتح البرنامج: في صفحة <b>How to use this book</b>
+        (أو امسح الباركود اللي هناك)، أو اللينك اللي في أول كل محاضرة.
+        <div class="gBox">البرنامج <b>بيفتح والكتاب جاهز فيه</b>، من غير ما تختار أي ملف.
+          ولو دوست لينك محاضرة، بيفتح على المحاضرة دي على طول.</div></li>
+      <li>لو فتحت من لينك الكتاب، هيظهر <b>فهرس المحاضرات</b>. دوس على المحاضرة اللي عايزها.</li>
       <li>شغّل الفيديو، والكتاب هيمشي معاه.</li>
     </ol>
+    <div class="gNote">عندك كتاب قديم في اسمه <span class="gb sm">(Player)</span>؟ دوس
+      <span class="gb primary">Choose the book…</span> واختاره، وهيشتغل زي الأول.</div>
     <div class="gNote">ترجع لفهرس المحاضرات في أي وقت من <span class="gb">Contents</span> فوق.</div>
 
     <h2><span class="gNum">٢</span> شكل الشاشة</h2>
@@ -475,7 +476,18 @@
             والنسخة دي تتفتح في البرنامج عادي.</td></tr>
     </table>
 
-    <h2><span class="gNum">٧</span> لو حصلت مشكلة</h2>
+    <h2><span class="gNum">٧</span> اسأل الـ AI</h2>
+    <p>جنب كل عنوان في الكتاب فيه لينك صغير اسمه <span class="gb sm">Ask AI</span>. بيفتح صفحة فيها
+      الجزء ده من الكتاب، وبيحوّله لسؤال جاهز للـ AI. اختار اللي محتاجه:</p>
+    <table class="gTable">
+      <tr><td><b>بسّط واشرح</b></td><td>الفكرة الأساسية الأول، وبعدين التفاصيل خطوة خطوة.</td></tr>
+      <tr><td><b>وضّح الغامض</b></td><td>الكتاب متفرّغ من تسجيل صوتي، فده بيوضّح أي جملة مش مفهومة أو كلمة اتفرّغت غلط.</td></tr>
+      <tr><td><b>فيه تحديثات؟</b></td><td>بيسأل لو فيه معلومة اتغيّرت في الـ guidelines أو العلاج بعد المحاضرة، ومصدرها.</td></tr>
+    </table>
+    <div class="gNote">الرد بالعربي المصري والمصطلحات بالإنجليزي، أو بالإنجليزي لو اخترت.
+      وبعدين دوس <span class="gb">انسخ السؤال</span> والصقه في أي AI، أو افتحه في Claude أو ChatGPT على طول.</div>
+
+    <h2><span class="gNum">٨</span> لو حصلت مشكلة</h2>
     <table class="gTable">
       <tr><td><b>الفيديو مش بيشتغل</b></td>
           <td>اتأكد إن النت شغال، وإنك فاتح من <b>Google Chrome</b> لو على أندرويد. ولو فيديو معيّن بس هو اللي مش شغال، يبقى غالباً صاحبه مانع تشغيله برّه يوتيوب.</td></tr>
@@ -565,6 +577,42 @@ async function openFiles(files) {
   loadNotes();
   showIndex();
 }
+
+// A link from the photos book opens the player with its text book already in:
+//   ?book=books/<name>.pdf[&lecture=N]
+// The book is read from this same site (GitHub Pages) - another site's file
+// is refused, so a link cannot make the player open someone else's PDF.
+async function openFromLink() {
+  const q = new URLSearchParams(location.search);
+  const book = q.get("book");
+  if (!book) return;
+  let url;
+  try { url = new URL(book, location.href); } catch { url = null; }
+  if (!url || url.origin !== location.origin) {
+    $("msg").textContent = "This link's book is not on this site - choose the book's PDF instead.";
+    return;
+  }
+  const name = decodeURIComponent(url.pathname.split("/").pop());
+  $("msg").style.color = "var(--muted)";
+  $("msg").textContent = "Loading the book ...";
+  let file;
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+    file = new File([await r.blob()], name, { type: "application/pdf" });
+  } catch (err) {
+    $("msg").style.color = "";
+    $("msg").textContent = `Could not load ${name}: ${err.message}\nChoose the book's PDF instead.`;
+    return;
+  }
+  $("msg").style.color = "";
+  await openFiles([file]);
+  if (!state.timeline || state.bookName !== name) return;      // openFiles said why
+  const n = parseInt(q.get("lecture"), 10);
+  const ch = state.timeline.chapters.find(c => c.chapter === n);
+  if (ch) openChapter(ch);
+}
+openFromLink();
 
 function showIndex() {
   const ul = $("chapters");
