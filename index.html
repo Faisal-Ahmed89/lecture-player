@@ -257,6 +257,9 @@
     header h1 { display: none; }
   }
 </style>
+<!-- usage counts (GoatCounter) - see "usage counts" in the script below -->
+<script data-goatcounter="https://famtranspro.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
 </head>
 <body>
 <header>
@@ -726,6 +729,7 @@ function openChapter(ch, page, resumeSec) {
   $("hdr").textContent = `${ch.chapter}. ${ch.title}`;
   const first = page || (ch.pages.length ? ch.pages[0].page : ch.first_page);
   showPage(first);
+  startWatch();
   if (resumeSec != null) loadVideo(ch, resumeSec, true);     // back where he left: video waits
   else loadVideo(ch, startOf(ch, first) || 0);
 }
@@ -1011,6 +1015,54 @@ function followTick(force) {
   if (want !== state.page) showPage(want);
 }
 setInterval(followTick, 500);
+
+// ------------------------------------------------------------ usage counts
+// GoatCounter (famtranspro.goatcounter.com) counts the page visit by itself;
+// these events add, per book and lecture: opened, first play, and the video
+// played past 25/50/75/100%. Counts only - nothing about who.
+// GoatCounter skips localhost by itself, so serve.py runs are never counted.
+const countQueue = [];        // events from before count.js has loaded
+function countEvent(kind) {
+  if (!state.chapter) return;
+  const book = (state.bookName || "").replace(/\.pdf$/i, "");
+  countQueue.push(`${kind}/${book}/L${state.chapter.chapter}`);
+  flushCounts();
+}
+function flushCounts() {
+  if (!window.goatcounter || !goatcounter.count) return;
+  while (countQueue.length) {
+    try { goatcounter.count({ path: countQueue.shift(), event: true }); } catch {}
+  }
+}
+const MILESTONES = [25, 50, 75, 100];
+function startWatch() {
+  state.watch = { played: false, hit: new Set(), lastT: null };
+  countEvent("open");
+}
+// Twice a second: a milestone counts only when the video plays across it,
+// not when the reader seeks past it or resumes beyond it.
+function watchTick() {
+  if (countQueue.length) flushCounts();
+  const w = state.watch;
+  if (!w || !state.playerReady || !state.chapter) return;
+  let t, d, playing;
+  try {
+    playing = state.player.getPlayerState() === YT.PlayerState.PLAYING;
+    t = state.player.getCurrentTime();
+    d = state.player.getDuration();
+  } catch { return; }
+  if (!playing) { w.lastT = null; return; }
+  if (!w.played) { w.played = true; countEvent("play"); }
+  if (w.lastT != null && t >= w.lastT && t - w.lastT < 2.5 && d > 0) {
+    for (const m of MILESTONES) {
+      // the last seconds are often skipped (end screen) - 100% is 97% of it
+      const at = d * (m === 100 ? 0.97 : m / 100);
+      if (!w.hit.has(m) && w.lastT < at && t >= at) { w.hit.add(m); countEvent("watch" + m); }
+    }
+  }
+  w.lastT = t;
+}
+setInterval(watchTick, 500);
 
 // ------------------------------------------------------------ where he left off
 // Per book, in this browser: the lecture, the page and the second of the video.
